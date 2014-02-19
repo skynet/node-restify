@@ -537,7 +537,7 @@ You can always add your own by subclassing `restify.RestError` like:
 
     function MyError(message) {
       restify.RestError.call(this, {
-        restCode: 'MyError'
+        restCode: 'MyError',
         statusCode: 418,
         message: message,
         constructorOpt: MyError
@@ -864,15 +864,19 @@ plugin has no impact if the client does not send `accept-encoding: gzip`.
 The serveStatic module is different than most of the other plugins, in that it
 is expected that you are going to map it to a route, as below:
 
-    server.get(/\/docs\/public\/?.*/, restify.serveStatic({
-      directory: './public'
+    server.get(/\/docs\/current\/?.*/, restify.serveStatic({
+      directory: './documentation/v1',
+      default: 'index.html'
     }));
 
-The plugin will enforce that only files under `directory` can be served; you can
-specify additional restrictions by passing in a `match` parameter, which is just
-a `RegExp` to check against the requested file name.  Lastly, you can pass in a
-`maxAge` numeric, which will set the `Cache-Control` header. Default is `3600`
-(1 hour).
+The plugin will enforce that all files under `directory` are served. The 
+`directory` served is relative to the process working directory. You can also
+provide a `default` parameter such as index.html for any directory that 
+lacks a direct file match. 
+You can specify additional restrictions by passing in a `match` parameter, 
+which is just a `RegExp` to check against the requested file name. Lastly, you 
+can pass in a `maxAge` numeric, which will set the `Cache-Control` header. 
+Default is `3600` (1 hour).
 
 ### Throttle
 
@@ -1029,7 +1033,7 @@ You pass in the auditor a bunyan logger, and it will write out records at the
 ## Request API
 
 Wraps all of the node
-[ServerRequest](http://nodejs.org/docs/latest/api/http.html#http.ServerRequest)
+[http.IncomingMessage](http://nodejs.org/api/http.html#http_http_incomingmessage)
 APIs, events and properties, plus the following.
 
 ### header(key, [defaultValue])
@@ -1088,6 +1092,18 @@ and it contains the give mime type.
 Note this is almost compliant with express, but restify does not have
 all the `app.is()` callback business express does.
 
+### isSecure()
+
+Check if the incoming request is encrypted.
+
+### isChunked()
+
+Check if the incoming request is chunked.
+
+### isKeepAlive()
+
+Check if the incoming request is kept alive.
+
 ### log
 
 Note that you can piggyback on the restify logging framework, by just using
@@ -1111,6 +1127,10 @@ instance that is a child component of the one restify has:
 
     var log = req.getLogger('MyFoo');
 
+### time()
+
+the time when this request arrived (ms since epoch)
+
 ### Properties
 
 ||**Name**||**Type**||**Description**||
@@ -1120,9 +1140,6 @@ instance that is a child component of the one restify has:
 ||log||Object||bunyan logger you can piggyback on||
 ||id||String||A unique request id (x-request-id)||
 ||path||String||cleaned up URL path||
-||query||String||the query string only||
-||secure||Boolean||Whether this was an SSL request||
-||time||Number||the time when this request arrived (ms since epoch)||
 
 ## Response API
 
@@ -1184,7 +1201,6 @@ Short-hand for:
 ||**Name**||**Type**||**Description**||
 ||code||Number||HTTP status code||
 ||contentLength||Number||short hand for the header content-length||
-||charSet||String||In conjunction with `contentType`, you can explicitly set the charSet to be written in the content-type header||
 ||contentType||String||short hand for the header content-type||
 ||headers||Object||response headers||
 ||id||String||A unique request id (x-request-id)||
@@ -1492,11 +1508,12 @@ Options:
 ||**Name**||**Type**||**Description**||
 ||accept||String||Accept header to send||
 ||connectTimeout||Number||Amount of time to wait for a socket||
+||requestTimeout||Number||Amount of time to wait for the request to finish||
 ||dtrace||Object||node-dtrace-provider handle||
 ||gzip||Object||Will compress data when sent using `content-encoding: gzip`||
 ||headers||Object||HTTP headers to set in all requests||
 ||log||Object||[bunyan](https://github.com/trentm/node-bunyan) instance||
-||retry||Object||options to provide to node-retry; defaults to 3 retries||
+||retry||Object||options to provide to node-retry;"false" disables retry; defaults to 4 retries||
 ||signRequest||Function||synchronous callback for interposing headers before request is sent||
 ||url||String||Fully-qualified URL to connect to||
 ||userAgent||String||user-agent string to use; restify inserts one, but you can override it||
